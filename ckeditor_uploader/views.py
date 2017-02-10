@@ -20,7 +20,7 @@ from django.utils.html import escape
 def get_upload_filename(upload_name, user):
     # If CKEDITOR_RESTRICT_BY_USER is True upload file to user specific path.
     if getattr(settings, 'CKEDITOR_RESTRICT_BY_USER', False):
-        user_path = user.get_username()
+        user_path = user.name
     else:
         user_path = ''
 
@@ -79,7 +79,7 @@ class ImageUploadView(generic.View):
 
     @staticmethod
     def _save_file(request, uploaded_file):
-        filename = get_upload_filename(uploaded_file.name, request.user)
+        filename = get_upload_filename(uploaded_file.name, request.user.client_set.get(pk=request.environ['HTTP_REFERER'].split('?')[1].split('=')[1]))
         saved_path = default_storage.save(filename, uploaded_file)
         return saved_path
 
@@ -103,8 +103,8 @@ def get_image_files(user=None, path=''):
     STORAGE_FILES = 1
 
     restrict = getattr(settings, 'CKEDITOR_RESTRICT_BY_USER', False)
-    if user and not user.is_superuser and restrict:
-        user_path = user.get_username()
+    if user and restrict:
+        user_path = user.name
     else:
         user_path = ''
 
@@ -166,7 +166,7 @@ def is_image(path):
 
 
 def browse(request):
-    files = get_files_browse_urls(request.user)
+    files = get_files_browse_urls(request.user.client_set.get(pk=request.environ['HTTP_REFERER'].split('?')[1].split('=')[1]))
     if request.method == 'POST':
         form = SearchForm(request.POST)
         if form.is_valid():
